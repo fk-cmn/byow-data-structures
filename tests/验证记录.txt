@@ -1,0 +1,25 @@
+验证日期：2026-11-17（Asia/Shanghai）
+环境：macOS / Apple Silicon；C++17（clang++）；OpenJDK 25（Java --release 17）
+命令：python3 tests/verify.py
+
+编译官方 TileEngine 与桌面入口……
+Worlds: 200 seeds, 2400 targets, 7200 path validations; 1453 weighted differences
+Playthrough seed 0: won in 198 turns, HP 92
+Playthrough seed 2026: won in 242 turns, HP 92
+Playthrough seed 4294967295: won in 198 turns, HP 100
+PASS: 500011 assertions
+PASS: Java/C++ bridge, JSON, saves, validation (13 assertions)
+All checks passed in 6.21s.
+
+桌面实测（官方 TileEngine / StdDraw）：
+- 原版黑底主菜单 N / L / Q 与种子输入页面可用。
+- N2026S 进入世界，原版 @ / # / FLOOR / SAND / FLOWER / DOOR 正常显示。
+- D 移动，U 撤销；实际 HUD 回合数与位置更新。
+- 鼠标选择地面，B 显示真实 BFS / Dijkstra / A* 对照结果。
+- 测试目标：BFS 34 步、代价 62、展开 373；Dijkstra 34 步、代价 34、展开 347；A* 34 步、代价 34、展开 39。
+- P 选择存档 3，S 保存；继续移动后 L 读取可恢复到保存时的第 1 回合。
+- L 视线开启时显示本房间及可见通道，墙后区域遮挡。
+- P / R 重放保存的行动后恢复至同一状态，显示 Replay complete，可继续操作。
+
+范围：Windows/Linux 源码未在对应系统实机验证；未生成实验报告或讲解视频。
+

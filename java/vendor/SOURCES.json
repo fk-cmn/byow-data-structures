@@ -1,0 +1,22 @@
+[
+  {
+    "file": "edu/princeton/cs/algs4/StdDraw.java",
+    "sha256": "c035dcd17ea26fdc3a0485992f4d7d6be9f5420be5094ba5cc5f341158b6ba77"
+  },
+  {
+    "file": "tileengine/TERenderer.java",
+    "sha256": "29f076f96725525a3cafd9ae1c927776b999ad582e8f84e9a205520973139866"
+  },
+  {
+    "file": "tileengine/TETile.java",
+    "sha256": "f07e7f44d5bb3ea79f37a47368ad25db7bc34de334e369e9ad85c2c99826f48b"
+  },
+  {
+    "file": "tileengine/Tileset.java",
+    "sha256": "f83552a8abb7cf398b30069b21c12ad5a9c0719e89298c511d30ebbb55780604"
+  },
+  {
+    "file": "utils/RandomUtils.java",
+    "sha256": "c1e77f8040b1d1e6a634f4b2802a2c8000614f0ae8e0ad1338ba92a9cf181cd8"
+  }
+]
