@@ -4,3 +4,8 @@ saves/*.txt
 __pycache__/
 tests/__pycache__/
 .DS_Store
+platforms/Windows/BYOW.exe
+platforms/Windows/app/
+platforms/Windows/runtime/
+platforms/macOS/BYOW.app/
+platforms/macOS/saves/
