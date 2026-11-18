@@ -21,7 +21,8 @@ def main():
     if not runtime.exists():
         subprocess.run([str(java_home / 'bin/jlink'), '--add-modules', 'java.desktop', '--strip-debug',
                         '--no-header-files', '--no-man-pages', '--compress=zip-6', '--output', str(runtime)], check=True)
-    output = run.ROOT / 'BYOW.app'
+    output = run.ROOT / 'platforms' / 'macOS' / 'BYOW.app'
+    output.parent.mkdir(parents=True, exist_ok=True)
     # 只替换本脚本产生、且包含已知主类配置的应用，防止误删同名文件。
     if output.exists():
         config = output / 'Contents/app/BYOW.cfg'

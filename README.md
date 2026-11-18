@@ -4,7 +4,7 @@
 
 ## 运行
 
-**当前 Mac（Apple Silicon）**：双击 `BYOW.app`。应用内含精简 Java 运行时，无须另装 Java/Python。
+**macOS（Apple Silicon）**：双击 `platforms/macOS/BYOW.app`。应用内含精简 Java 运行时，无须另装 Java/Python。需在 Mac 上运行 `python3 package_macos.py` 生成应用包。
 
 进入后按 `N`，输入种子（例如 `2026`），按 `S` 开始。主菜单 `L` 读取存档 1，`Q` 退出。界面直接使用官方 `TERenderer.java`、`TETile.java` 和 `Tileset.java`，保留黑底、Monaco 字体、粉灰色 `#` 墙壁、绿色地板及白色 `@`。
 
@@ -14,7 +14,7 @@
 python3 run.py
 ```
 
-macOS 也可双击 `启动游戏.command`；Windows 双击 `启动游戏.bat`。首次运行会编译。当前打包的 `.app` 和 C++ 二进制仅在 Apple Silicon Mac 上验证；Windows/Linux 应从源码编译，尚未做实机验证。
+macOS 也可双击 `platforms/macOS/启动游戏.command`；Windows 双击 `platforms/Windows/启动游戏.bat`。从源码启动首次运行会编译。Windows 免安装发行包（`BYOW.exe`、应用文件和 runtime）以及 macOS `.app` 都是平台专属构建产物，不纳入 Git；推送仓库时包含共用源码、平台启动脚本和打包说明，用户可在对应平台重新构建应用包。
 
 ## 玩法
 
@@ -80,14 +80,15 @@ python3 tests/verify.py
 src/                   C++ 数据结构、图算法、世界和游戏状态
 java/core/             原版窗口的输入/显示适配、JSON 读取、存档
 java/vendor/           官方 TileEngine、RandomUtils 和 StdDraw 原始源码
-BYOW.app/              当前 Mac 可直接运行的应用
+platforms/macOS/       macOS 启动入口与打包说明；BYOW.app 为本机生成
+platforms/Windows/     Windows 启动入口与打包说明；发行包为本机生成
 build/byow.jar         Java 桌面入口；C++ 算法不在 jar 中
 build/relic_engine     当前平台的 C++ 核心
 tests/                 可复现测试与验证记录
 screenshots/           实际桌面截图
 saves/                 本机存档
 run.py                 源码编译与运行入口
-package_macos.py       使用官方 jlink/jpackage 重新生成应用
+package_macos.py       使用官方 jlink/jpackage 生成 platforms/macOS/BYOW.app
 THIRD_PARTY.md         框架来源与复用范围
 ```
 
