@@ -30,10 +30,15 @@ constexpr float PLAYER_SIZE = 29.f;
 constexpr float SIDEBAR_X = MAP_X + relic::WIDTH * TILE + 22.f;
 constexpr float SIDEBAR_CONTENT_X = SIDEBAR_X + 14.f;
 constexpr float ALGORITHM_BUTTON_STEP = 78.f;
-constexpr unsigned HERO_IDLE_FRAMES = 24, HERO_WALK_FRAMES = 8;
+constexpr unsigned HERO_IDLE_FRAMES = 24;
 constexpr auto HERO_IDLE_FRAME_TIME = std::chrono::milliseconds(90);
 const sf::FloatRect MAZE_AREA({MAP_X, MAP_Y}, {relic::WIDTH * TILE, relic::HEIGHT * TILE});
-constexpr uint32_t DEFAULT_SEED = 2026;
+const sf::FloatRect MAP_HERO({1185,762},{188,54});
+const sf::FloatRect BRIEF_HERO({563,610},{314,48});
+const sf::FloatRect PAUSE_BUTTON({985,19},{210,46});
+const sf::FloatRect RESELECT_LEVEL({563,510},{314,54});
+const sf::FloatRect RESUME({563,422},{314,54});
+const sf::FloatRect HERO_USE({810,603},{260,53});
 const sf::FloatRect PLAY_BUTTON({534, 474}, {372, 74});
 const sf::FloatRect SEED_BUTTON({534, 566}, {177, 45});
 const sf::FloatRect MAP_BUTTON({729, 566}, {177, 45});
@@ -49,8 +54,8 @@ struct Hero {
     const char* intro;
 };
 const std::array<Hero, 8> HEROES{{
-    {u8"枝白", "twig", {164, 229, 197},
-     u8"在春林里长大的旅人。\n总把一片新叶别在发间，\n遇上岔路时会停下来听风。"},
+    {u8"方糖", "twig", {164, 229, 197},
+     u8"白西装配着橄榄绿领结。\n方糖从口袋里抽出一张牌，\n抬眼望向下一处岔路。"},
     {u8"焰尾", "ember", {255, 197, 117},
      u8"披着红斗篷的探险家。\n爱用指尖的小火星打招呼，\n看见陌生的门总想推开看看。"},
     {u8"晚铃", "bell", {241, 151, 198},
@@ -61,10 +66,10 @@ const std::array<Hero, 8> HEROES{{
      u8"戴着旧帽子的小小术士。\n与不爱落地的小使魔结伴，\n走到哪都要数一数星星。"},
     {u8"重音テト", "teto", {255, 151, 174},
      u8"双卷发会随着脚步摇摆。\n她擅长把长廊走成舞台，\n偶尔眨一只眼和你打招呼。"},
-    {u8"凛凛蝶", "rin", {210, 200, 244},
-     u8"循着月色寻花的旅人。\n蓝灰长发垂在淡紫衣袖旁，\n总有一只小蝶停在手边。"},
-    {u8"天马", "tenma", {255, 205, 149},
-     u8"披着羽衣的远行者。\n一只眼像暮紫，一只眼像金叶，\n抬手时衣角会随风扬起。"}
+    {u8"凜凜蝶", "rin", {210, 200, 244},
+     u8"循着月色寻花的旅人。\n齐刘海下是一双紫色眼睛，\n深紫长发拂过白色衣领。"},
+    {u8"鸬宫天马", "tenma", {255, 205, 149},
+     u8"黑袍的金色衣领上方，\n一只眼映暮紫，一只眼映新绿。\n几绺翘发随步子轻晃。"}
 }};
 sf::FloatRect heroCard(int index) {
     return {{115.f + (index % 4) * 307.f, 228.f + (index / 4) * 246.f}, {289.f, 232.f}};
@@ -81,10 +86,10 @@ struct Level {
     sf::Vector2f position;
 };
 const std::array<Level, 8> LEVELS{{
-    {u8"初入遗迹", 2026, {174, 490}}, {u8"苔庭", 3142, {370, 352}},
-    {u8"沉水小径", 836, {408, 646}}, {u8"琥珀石窟", 5017, {644, 255}},
-    {u8"幽泉", 7129, {666, 497}}, {u8"古根密室", 9953, {819, 701}},
-    {u8"长明殿", 4309, {985, 310}}, {u8"霜冠之门", 15941, {1225, 522}}
+    {u8"初入遗迹", 2026, {156, 350}}, {u8"苔庭", 3142, {330, 479}},
+    {u8"沉水小径", 836, {254, 659}}, {u8"琥珀石窟", 5017, {588, 289}},
+    {u8"幽泉", 7129, {739, 493}}, {u8"古根密室", 9953, {1026, 658}},
+    {u8"长明殿", 4309, {1160, 285}}, {u8"霜冠之门", 15941, {1302, 498}}
 }};
 constexpr std::array<std::array<int, 2>, 11> ROADS{{
     {0, 1}, {0, 2}, {1, 3}, {1, 4}, {2, 4}, {2, 5}, {3, 6},
@@ -416,55 +421,12 @@ void crystalFlower(sf::RenderWindow& window, sf::Vector2f center, sf::Color colo
     }
 }
 
-void flower(sf::RenderWindow& window, sf::Vector2f center, float radius, std::size_t index, bool cleared) {
-    const std::array<sf::Color, 8> palette{{
-        {249, 155, 193}, {175, 204, 251}, {250, 204, 96}, {241, 146, 92},
-        {135, 220, 176}, {232, 117, 113}, {183, 173, 243}, {169, 228, 251}
-    }};
-    const auto color = cleared ? palette[index] : sf::Color(130, 148, 149);
-    const auto stem = cleared ? sf::Color(98, 163, 112) : sf::Color(83, 103, 101);
-    const float angle = static_cast<float>(index) * .38f;
-    disc(window, center, radius * 1.42f, alpha(color, cleared ? 34 : 16));
-    box(window, center + sf::Vector2f(-2, 3), {4, radius * 1.12f}, stem);
-    polygon(window, {center + sf::Vector2f(0, radius), center + sf::Vector2f(-radius * .78f, radius * .55f),
-                     center + sf::Vector2f(-radius * .36f, radius * .48f)}, stem);
-    polygon(window, {center + sf::Vector2f(0, radius), center + sf::Vector2f(radius * .83f, radius * .48f),
-                     center + sf::Vector2f(radius * .33f, radius * .46f)}, stem);
-    const int petals = std::array<int, 8>{5, 4, 10, 6, 8, 5, 7, 6}[index];
-    for (int i = 0; i < petals; ++i) {
-        const float theta = angle + i * 6.2831853f / petals;
-        const sf::Vector2f direction(std::cos(theta), std::sin(theta));
-        sf::CircleShape petal(1.f, index % 3 == 1 ? 4 : 20);
-        petal.setOrigin({1, 1});
-        petal.setPosition(center + direction * (radius * .48f));
-        petal.setScale({radius * .55f, radius * (petals >= 8 ? .225f : .34f)});
-        petal.setRotation(sf::radians(theta));
-        petal.setFillColor(color);
-        petal.setOutlineColor(sf::Color(28, 41, 44));
-        petal.setOutlineThickness(.065f);
-        window.draw(petal);
-    }
-    disc(window, center, radius * (index == 2 ? .32f : .22f),
-         cleared ? sf::Color(255, 223, 144) : sf::Color(189, 192, 177));
-}
+constexpr std::array<const char*, 8> FLOWER_NAMES{
+    u8"樱花", u8"紫花地丁", u8"荷花", u8"桂花", u8"栀子", u8"秋菊", u8"水仙", u8"红梅"
+};
 
-void scenery(sf::RenderWindow& window, const Season& season, sf::Vector2f p, sf::Vector2f size) {
-    box(window, p, size, season.sky);
-    const auto at = [&](float x, float y) { return p + sf::Vector2f(x * size.x, y * size.y); };
-    disc(window, at(.80f, .24f), size.y * .103f, alpha(season.accent, 32));
-    disc(window, at(.80f, .24f), size.y * .072f, alpha(season.accent, 123));
-    polygon(window, {at(0,.63f), at(.16f,.34f), at(.33f,.57f), at(.49f,.29f), at(.68f,.55f),
-                     at(.92f,.37f), at(1,.59f), at(1,.89f), at(0,.89f)}, season.distant);
-    polygon(window, {at(0,.77f), at(.16f,.68f), at(.34f,.80f), at(.61f,.61f), at(.81f,.73f),
-                     at(1,.63f), at(1,1), at(0,1)}, season.ground);
-    for (int i = 0; i < 24; ++i) {
-        const float x = .025f + i * .041f;
-        const float y = .88f + .045f * std::sin(i * 1.73f);
-        const float height = .057f + .037f * std::abs(std::cos(i * 2.3f));
-        const float width = .022f;
-        polygon(window, {at(x-width,y), at(x,y-height), at(x+width,y)}, season.foliage);
-        if (i % 3 == 0) disc(window, at(x, y-height*.7f), size.y * .004f, season.accent);
-    }
+bool flowerHit(sf::Vector2f delta) {
+    return std::abs(delta.x) < 83 && delta.y >= -34 && delta.y <= 76;
 }
 
 void drawStoneHall(sf::RenderWindow& window) {
@@ -660,16 +622,10 @@ struct SpriteAsset {
     }
 };
 
-struct HeroSprites {
-    SpriteAsset idle, walk;
-    explicit HeroSprites(const Hero& hero)
-        : idle(std::string("heroes/") + hero.asset + "-idle.png", HERO_IDLE_FRAMES, 6),
-          walk(std::string("heroes/") + hero.asset + "-walk.png", HERO_WALK_FRAMES, 4) {}
-};
-
 template<std::size_t... Slots>
 auto loadHeroSprites(std::index_sequence<Slots...>) {
-    return std::array<HeroSprites, sizeof...(Slots)>{HeroSprites(HEROES[Slots])...};
+    return std::array<SpriteAsset, sizeof...(Slots)>{
+        SpriteAsset(std::string("heroes/portraits/") + HEROES[Slots].asset + ".png")...};
 }
 
 class App {
@@ -677,10 +633,12 @@ class App {
     sf::Font font;
     sf::Font calligraphy;
     sf::Font titleCalligraphy, blackletter;
-    sf::Texture gothicHall;
+    sf::Texture gothicHall, valley;
+    SpriteAsset flowers{"garden/flowers.png", 8, 4};
+    SpriteAsset dormantFlowers{"garden/flowers-dormant.png", 8, 4};
     bool hasCalligraphy = false, hasGothicHall = false;
     bool hasTitleCalligraphy = false, hasBlackletter = false;
-    std::array<HeroSprites, HEROES.size()> heroes = loadHeroSprites(std::make_index_sequence<HEROES.size()>{});
+    std::array<SpriteAsset, HEROES.size()> heroes = loadHeroSprites(std::make_index_sequence<HEROES.size()>{});
     std::array<SpriteAsset, 4> guardians{SpriteAsset("guards/moss.png", 4), SpriteAsset("guards/ember.png", 4),
                                         SpriteAsset("guards/tide.png", 4), SpriteAsset("guards/frost.png", 4)};
     std::unique_ptr<relic::GameSession> session;
@@ -693,7 +651,7 @@ class App {
     bool seedMode = false, mapMode = false, resultsMode = false;
     bool autoWalk = false, showPath = true, progressSaved = true;
     bool overview = true, briefing = false, helpMode = false, heroMode = false, briefingFromMap = false;
-    bool heroDetail = false;
+    bool heroDetail = false, paused = false;
     bool jumpPose = false;
     int hero = 0;
     std::vector<sf::Keyboard::Key> held;
@@ -725,6 +683,9 @@ public:
         hasBlackletter = blackletter.openFromFile(assetPath("UnifrakturMaguntia-Book.ttf"));
         hasGothicHall = gothicHall.loadFromFile(assetPath("gothic-hall.jpg"));
         gothicHall.setSmooth(true);
+        if (!valley.loadFromFile(assetPath("garden/valley.jpg")))
+            throw std::runtime_error("Missing garden/valley.jpg");
+        valley.setSmooth(true);
         resize(window.getSize());
         loadProgress();
         std::ifstream choice(progressPath.parent_path() / "hero.txt");
@@ -816,7 +777,7 @@ private:
         music.setExpedition(false);
         session.reset();
         activeLevel.reset();
-        resultsMode = seedMode = autoWalk = briefing = false;
+        resultsMode = seedMode = autoWalk = briefing = paused = false;
         held.clear();
         mapMode = true;
     }
@@ -833,6 +794,18 @@ private:
         choice << hero << '\n';
         heroMode = false;
         heroDetail = true;
+    }
+
+    void pauseGame() {
+        pauseTimer();
+        held.clear();
+        autoWalk = false;
+        paused = true;
+    }
+
+    void resumeGame() {
+        paused = false;
+        timerStarted = Clock::now();
     }
 
     void startChallenge() {
@@ -928,8 +901,22 @@ private:
         return stepOrigin + (tilePosition(session->game.player) - stepOrigin) * stepProgress(now);
     }
 
-    const Season& currentSeason() const {
-        return SEASONS[activeLevel ? LEVEL_SEASONS[*activeLevel] : session->game.world.seed % SEASONS.size()];
+    std::size_t seasonIndex() const {
+        return activeLevel ? LEVEL_SEASONS[*activeLevel] : session->game.world.seed % SEASONS.size();
+    }
+    const Season& currentSeason() const { return SEASONS[seasonIndex()]; }
+
+    void drawSeasonLandscape(sf::Vector2f position, sf::Vector2f size) {
+        // Windows onto the four regions of the same painted valley.
+        const std::array<sf::IntRect,4> regions{{
+            {{0,85},{660,420}}, {{180,552},{660,420}},
+            {{860,440},{660,420}}, {{918,0},{660,420}}
+        }};
+        sf::Sprite landscape(valley, regions[seasonIndex()]);
+        landscape.setPosition(position);
+        landscape.setScale({size.x/660.f,size.y/420.f});
+        landscape.setColor({105,112,121});
+        window.draw(landscape);
     }
 
     void updateCamera() {
@@ -1044,13 +1031,8 @@ private:
     void onKey(sf::Keyboard::Key key) {
         using Key = sf::Keyboard::Key;
         if (key == Key::M) { music.toggle(); return; }
-        if (briefing) {
-            if (key == Key::Enter) startChallenge();
-            else if (key == Key::Escape) cancelBriefing();
-            return;
-        }
         if (heroDetail) {
-            if (key == Key::Escape) heroDetail = false;
+            if (key == Key::Escape || key == Key::Enter) heroDetail = false;
             return;
         }
         if (helpMode || heroMode) {
@@ -1061,12 +1043,25 @@ private:
             }
             return;
         }
+        if (briefing) {
+            if (key == Key::Enter) startChallenge();
+            else if (key == Key::Escape) cancelBriefing();
+            else if (key == Key::C) heroMode = true;
+            return;
+        }
+        if (paused) {
+            if (key == Key::Escape || key == Key::Enter) resumeGame();
+            else if (key == Key::C) heroMode = true;
+            else if (key == Key::Tab) showMap();
+            return;
+        }
         if (resultsMode) {
             if (key == sf::Keyboard::Key::Enter || key == sf::Keyboard::Key::Escape) showMap();
             return;
         }
         if (mapMode) {
             if (key == sf::Keyboard::Key::Escape) mapMode = false;
+            else if (key == Key::C) heroMode = true;
             else if (key >= sf::Keyboard::Key::Num1 && key <= sf::Keyboard::Key::Num8) {
                 const auto index = static_cast<std::size_t>(static_cast<int>(key) - static_cast<int>(sf::Keyboard::Key::Num1));
                 beginGame(LEVELS[index].seed, index);
@@ -1075,6 +1070,7 @@ private:
         }
         if (key == sf::Keyboard::Key::Escape) {
             if (seedMode) closeSeedMenu();
+            else if (session) pauseGame();
             autoWalk = false;
             held.clear();
             return;
@@ -1088,12 +1084,13 @@ private:
         }
         if (key == sf::Keyboard::Key::N) { chooseSeed(); return; }
         if (!session) {
-            if (key == sf::Keyboard::Key::Enter) beginGame(DEFAULT_SEED);
+            if (key == sf::Keyboard::Key::Enter) showMap();
             else if (key == Key::Tab) showMap();
             else if (key == Key::F1) helpMode = true;
             else if (key == Key::C) heroMode = true;
             return;
         }
+        if (key == Key::C) { pauseGame(); heroMode = true; return; }
         if (key != Key::E) autoWalk = false;
         if (direction(key)) {
             held.erase(std::remove(held.begin(), held.end(), key), held.end());
@@ -1116,13 +1113,8 @@ private:
 
     void onMouse(sf::Vector2f point) {
         if (MUSIC_BUTTON.contains(point) && music.available()) { music.toggle(); return; }
-        if (briefing) {
-            if (BRIEF_GO.contains(point)) startChallenge();
-            if (MODAL_BACK.contains(point)) cancelBriefing();
-            return;
-        }
         if (heroDetail) {
-            if (HERO_CLOSE.contains(point)) heroDetail = false;
+            if (HERO_CLOSE.contains(point) || HERO_USE.contains(point)) heroDetail = false;
             return;
         }
         if (helpMode || heroMode) {
@@ -1131,15 +1123,28 @@ private:
                 if (heroCard(i).contains(point)) { selectHero(i); break; }
             return;
         }
+        if (briefing) {
+            if (BRIEF_GO.contains(point)) startChallenge();
+            if (MODAL_BACK.contains(point)) cancelBriefing();
+            if (BRIEF_HERO.contains(point)) heroMode = true;
+            return;
+        }
+        if (paused) {
+            if (RESUME.contains(point)) resumeGame();
+            else if (RESELECT_LEVEL.contains(point)) showMap();
+            else if (BRIEF_HERO.contains(point)) heroMode = true;
+            return;
+        }
         if (resultsMode) {
             if (CONTINUE_BUTTON.contains(point)) showMap();
             return;
         }
         if (mapMode) {
+            if (MAP_HERO.contains(point)) { heroMode = true; return; }
             if (BACK_BUTTON.contains(point)) { mapMode = false; return; }
             for (std::size_t i = 0; i < LEVELS.size(); ++i) {
                 const auto delta = point - LEVELS[i].position;
-                if (std::abs(delta.x) < 74 && delta.y > -40 && delta.y < 64) {
+                if (flowerHit(delta)) {
                     beginGame(LEVELS[i].seed, i);
                     return;
                 }
@@ -1152,13 +1157,14 @@ private:
             return;
         }
         if (!session) {
-            if (PLAY_BUTTON.contains(point)) beginGame(DEFAULT_SEED);
+            if (PLAY_BUTTON.contains(point)) showMap();
             else if (SEED_BUTTON.contains(point)) chooseSeed();
             else if (MAP_BUTTON.contains(point)) showMap();
             else if (HELP_BUTTON.contains(point)) helpMode = true;
             else if (HERO_BUTTON.contains(point)) heroMode = true;
             return;
         }
+        if (PAUSE_BUTTON.contains(point)) { pauseGame(); return; }
         if (point.y >= 414 && point.y < 452 && point.x >= SIDEBAR_CONTENT_X && point.x < SIDEBAR_CONTENT_X + 3 * ALGORITHM_BUTTON_STEP) {
             const int index = static_cast<int>((point.x - SIDEBAR_CONTENT_X) / ALGORITHM_BUTTON_STEP);
             session->setAlgorithm(index); autoWalk = false; return;
@@ -1185,7 +1191,7 @@ private:
             drawMenu();
         } else {
             window.clear(sf::Color(12, 16, 21));
-            scenery(window, currentSeason(), {0, 82}, {1440, 818});
+            drawSeasonLandscape({0,82},{1440,818});
             box(window, {0, 0}, {WINDOW_W, 82}, sf::Color(24, 31, 39));
             text(window, font, activeLevel ? LEVELS[*activeLevel].name : u8"自定义探险", 32, 25, 28);
             text(window, font, currentSeason().name, 357, 32, 19, currentSeason().accent);
@@ -1197,6 +1203,13 @@ private:
             centeredLabel(window, font, u8"剩余时间", {720, 65}, 13, clockColor);
             updateCamera();
             drawGame();
+            if (!resultsMode && !briefing) drawButton(PAUSE_BUTTON,u8"暂停 / 换关 [Esc]");
+            if (paused) {
+                modal(u8"暂停");
+                drawButton(RESUME,u8"继续游戏 [Enter]",true);
+                drawButton(RESELECT_LEVEL,u8"放弃本局并选关 [Tab]");
+                drawHeroChoice();
+            }
             if (resultsMode) drawResults();
             if (briefing) drawBriefing();
         }
@@ -1214,6 +1227,12 @@ private:
     void drawButton(const sf::FloatRect& bounds, const std::string& title, bool primary = false) {
         const auto pointer = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         const bool hover = bounds.contains(pointer);
+        if (mapMode) {
+            cutPanel(window,bounds,5,hover ? sf::Color(255,243,214) : sf::Color(246,232,202,237),
+                     {125,98,71});
+            centeredLabel(window,titleFont(),title,bounds.getCenter(),21,{65,48,37});
+            return;
+        }
         const sf::Color gold(247, 205, 116), light(230, 237, 240);
         box(window, bounds.position, bounds.size,
             primary ? (hover ? gold : sf::Color(224, 171, 77))
@@ -1232,21 +1251,14 @@ private:
 
     void drawMap() {
         const auto& mapFont = titleFont();
-        scenery(window, SEASONS[0], {0, 0}, {1440, 900});
-        const std::array<sf::Vector2f, 4> groves{{{236, 273}, {446, 734}, {849, 286}, {1160, 374}}};
-        for (std::size_t i = 0; i < groves.size(); ++i) {
-            const auto& season = SEASONS[i];
-            for (int tree = 0; tree < 10; ++tree) {
-                const float angle = tree * 2.4f;
-                const auto p = groves[i] + sf::Vector2f(std::cos(angle) * (12.f + tree * 8.f),
-                                                       std::sin(angle) * (10.f + tree * 5.f));
-                box(window, p + sf::Vector2f(-2, -5), {4, 18}, season.ground);
-                disc(window, p + sf::Vector2f(0, -10), 10.f + (tree % 4) * 2.f, season.foliage);
-                disc(window, p + sf::Vector2f(-3, -14), 4.f, alpha(season.accent, 160));
-            }
-        }
-        centeredLabel(window, mapFont, u8"四季花径", {720, 106}, 58, {247, 220, 153}, false, 1.10f);
-        centeredLabel(window, mapFont, u8"点选一朵花，进入对应的迷宫", {720, 158}, 24, {223, 235, 224});
+        window.clear({37,40,37});
+        sf::Sprite painting(valley);
+        const auto size = valley.getSize();
+        painting.setScale({float(WINDOW_W)/size.x, float(WINDOW_H)/size.y});
+        window.draw(painting);
+        const sf::Color ink(57,49,40);
+        centeredLabel(window, mapFont, u8"四季花径", {720,65}, 62, ink, false, 1.12f);
+        centeredLabel(window, displayFont(), u8"任选一朵花进入，通关后恢复花色", {720,113}, 19, ink);
         for (std::size_t road = 0; road < ROADS.size(); ++road) {
             const auto& edge = ROADS[road];
             const auto from = LEVELS[edge[0]].position;
@@ -1261,28 +1273,36 @@ private:
                 const float t = pebble / 24.f;
                 const auto p = from * ((1.f-t)*(1.f-t)) + control * (2.f*t*(1.f-t)) + to * (t*t);
                 disc(window, p + normal * std::sin(pebble * 1.7f) * 2.f,
-                     3.f + (pebble % 3) * .7f, visited ? sf::Color(192, 218, 156) : sf::Color(176, 154, 109));
+                     1.7f + (pebble % 3) * .35f, visited ? sf::Color(130,60,39,205) : sf::Color(87,74,54,155));
             }
         }
         const auto pointer = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         for (std::size_t i = 0; i < LEVELS.size(); ++i) {
             const auto position = LEVELS[i].position;
             const auto delta = pointer - position;
-            const bool hover = std::abs(delta.x) < 74 && delta.y > -40 && delta.y < 64;
-            flower(window, position, hover ? 34.f : 28.f, i, cleared[i]);
-            const sf::FloatRect label(position + sf::Vector2f(-76, 39), {152, 27});
-            cutPanel(window, label, 7, {16, 29, 32, 205}, sf::Color::Transparent);
-            centeredLabel(window, mapFont, std::to_string(i + 1) + "  " + LEVELS[i].name,
-                          label.getCenter(), 23, {236, 241, 228});
+            const bool hover = flowerHit(delta);
+            const auto& season = SEASONS[LEVEL_SEASONS[i]];
+            const float side = hover ? 75.f : 66.f;
+            // A warm mounting behind the specimen keeps white petals readable on snow.
+            disc(window,position,side*.48f,{246,232,202,225});
+            auto& atlas = cleared[i] || hover ? flowers : dormantFlowers;
+            atlas.draw(window,position-sf::Vector2f(side/2,side/2),side,false,i);
+            const sf::FloatRect label(position+sf::Vector2f(-81,30),{162,46});
+            cutPanel(window,label,5,{247,234,205,242},{123,97,65,186});
+            centeredLabel(window,mapFont,std::to_string(i+1)+"  "+LEVELS[i].name,
+                          position+sf::Vector2f(0,43),22,ink);
+            centeredLabel(window,displayFont(),std::string(season.name)+u8" · "+FLOWER_NAMES[i],
+                          position+sf::Vector2f(0,65),15,{100,70,50});
         }
         drawButton(BACK_BUTTON, u8"返回 [Esc]");
+        drawButton(MAP_HERO,u8"换角色 [C]");
         const auto completed = std::count(cleared.begin(), cleared.end(), true);
         centeredLabel(window, mapFont, u8"已复苏 " + std::to_string(completed) + " / "
-                      + std::to_string(LEVELS.size()) + u8" 朵花", {720, 781}, 25, {223, 240, 207});
+                      + std::to_string(LEVELS.size()) + u8" 朵花", {720, 837}, 26, ink);
         centeredLabel(window, mapFont, completed == static_cast<int>(LEVELS.size())
                       ? u8"八朵花已齐聚，花神的传说仍待揭晓。"
                       : u8"八朵花齐聚之时，拼合碎片，召唤花神，寻回昔日花都。",
-                      {720, 818}, 19, {220, 231, 213});
+                      {720, 872}, 17, ink);
     }
 
     void modal(const std::string& title) {
@@ -1291,6 +1311,10 @@ private:
         box(window, {388, 154}, {664, 620}, sf::Color(23, 32, 41), sf::Color(155, 120, 67));
         box(window, {410, 175}, {620, 2}, sf::Color(155, 120, 67));
         centeredLabel(window, font, title, {720, 231}, 38, gold, true);
+    }
+
+    void drawHeroChoice() {
+        drawAntiqueButton(BRIEF_HERO, std::string(u8"换角色 [C]  ·  ") + HEROES[hero].name);
     }
 
     void drawBriefing() {
@@ -1314,6 +1338,7 @@ private:
                       {720, 546}, 19, sf::Color(210, 224, 224));
         centeredLabel(window, font, u8"集齐四朵花后前往出口。", {720, 582}, 19, sf::Color(210, 224, 224));
         drawButton(MODAL_BACK, u8"返回 [Esc]");
+        drawHeroChoice();
         drawButton(BRIEF_GO, u8"出发 [Enter]", true);
     }
 
@@ -1399,7 +1424,7 @@ private:
             blossom(window, {center, top + 10}, 4.f, selected ? edge : color);
             constexpr float portrait = 176.f;
             const auto frame = idleFrame(now, i);
-            if (!heroes[i].idle.draw(window, {center - portrait / 2, top - 2}, portrait, false, frame))
+            if (!heroes[i].draw(window, {center - portrait / 2, top - 2 + 1.3f*std::sin(frame*.262f)}, portrait))
                 drawExplorer(window, {center - TILE / 2, top + 78}, {0, 1}, frame / float(HERO_IDLE_FRAMES), i);
             box(window, {center - 65, top + 173}, {130, 1}, alpha(edge, 97));
             centeredLabel(window, displayFont(), HEROES[i].name, {center, top + 190}, 25, color);
@@ -1432,11 +1457,12 @@ private:
             const auto position = center + sf::Vector2f(std::cos(angle), std::sin(angle)) * radius;
             disc(window, position, i % 4 == 0 ? 2.7f : 1.4f, alpha(color, 120));
         }
-        if (!heroes[hero].idle.draw(window, {226, 169}, 518.f, false, idleFrame(now, hero)))
+        if (!heroes[hero].draw(window, {226, 169 + 2.f*std::sin(idleFrame(now,hero)*.262f)}, 518.f))
             drawExplorer(window, center, {0, 1}, 0.f, hero);
         text(window, displayFont(), profile.name, 810, 297, 52, color);
         box(window, {812, 389}, {275, 2}, alpha(color, 146));
-        text(window, font, profile.intro, 812, 429, 22, sf::Color(226, 231, 240));
+        text(window, displayFont(), profile.intro, 812, 429, 22, sf::Color(226, 231, 240));
+        drawAntiqueButton(HERO_USE,u8"使用此角色 [Enter]");
         drawAntiqueButton(HERO_CLOSE, u8"×");
     }
 
@@ -1460,7 +1486,7 @@ private:
             text(window, font, values[i], 627, y, 23, gold);
         }
         if (activeLevel) {
-            flower(window, {895, 438}, 57.f, *activeLevel, cleared[*activeLevel]);
+            (cleared[*activeLevel] ? flowers : dormantFlowers).draw(window,{840,383},110,false,*activeLevel);
             centeredLabel(window, displayFont(), won ? u8"遗迹之花已复苏" : cleared[*activeLevel] ? u8"此前已复苏" : u8"花朵尚未绽放",
                           {895, 521}, 18, light);
         }
@@ -1517,7 +1543,7 @@ private:
         box(window, MAZE_AREA.position - sf::Vector2f(6, 6), MAZE_AREA.size + sf::Vector2f(12, 12),
             sf::Color(20, 25, 30), sf::Color(82, 79, 65));
         window.setView(mazeView);
-        scenery(window, season, MAZE_AREA.position, MAZE_AREA.size);
+        drawSeasonLandscape(MAZE_AREA.position,MAZE_AREA.size);
         for (int id = 0; id < relic::CELLS; ++id) {
             const auto pos = tilePosition(id);
             const auto variant = static_cast<std::uint8_t>((id * 13 + id / relic::WIDTH * 7) % 7);
@@ -1551,6 +1577,27 @@ private:
             box(window, pos, {TILE - 1, TILE - 1}, sf::Color(color.r + variant, color.g + variant, color.b + variant));
             box(window, pos + sf::Vector2f(1, 1), {TILE - 3, 1},
                 alpha(season.accent, 55));
+        }
+        // Paint behind every interactive object and route marker, inside the maze view.
+        const float seconds = std::chrono::duration<float>(Clock::now()-cameraEpoch).count();
+        for (int i=0; i<64; ++i) {
+            const float phase = seconds*(.5f+.07f*(i%5)) + i*1.7f;
+            const bool firefly = &season == &SEASONS[1];
+            const float fall = firefly ? 0.f : seconds*(8.f+i%11);
+            const float x = std::fmod(i*117.f + 16.f + 15.f*std::sin(phase), MAZE_AREA.size.x);
+            const float y = std::fmod(i*173.f + 7.f + fall + 6.f*std::cos(phase), MAZE_AREA.size.y);
+            const auto p = MAZE_AREA.position + sf::Vector2f(x,y);
+            if (firefly) {
+                const auto glow = static_cast<std::uint8_t>(80 + 45*std::sin(phase));
+                disc(window,p,2.8f,{225,230,134,static_cast<std::uint8_t>(glow/3)});
+                disc(window,p,1.f,{245,247,161,glow});
+            } else if (&season == &SEASONS[3]) {
+                disc(window,p,1.f+.35f*(i%3),{231,243,250,156});
+            } else {
+                const float tilt = 2.2f*std::sin(phase);
+                polygon(window,{p+sf::Vector2f(-3,tilt),p+sf::Vector2f(-1,-2),
+                                p+sf::Vector2f(3,-tilt),p+sf::Vector2f(0,1.7f)},alpha(season.accent,146));
+            }
         }
         const auto exit = tilePosition(game.world.exit);
         const auto exitColor = game.collected == 4 ? sf::Color(249, 181, 73) : sf::Color(174, 118, 74);
@@ -1611,9 +1658,8 @@ private:
         // The bottom padding in each frame leaves the shoes aligned with the floor.
         const auto spriteOrigin = playerPos + sf::Vector2f((TILE - PLAYER_SIZE) / 2.f, TILE - PLAYER_SIZE + 1.f - lift);
         auto& character = heroes[hero];
-        bool drawn = walking && character.walk.draw(window, spriteOrigin, PLAYER_SIZE, facing.x < 0,
-                                                     static_cast<unsigned>(progress * HERO_WALK_FRAMES));
-        if (!drawn) drawn = character.idle.draw(window, spriteOrigin, PLAYER_SIZE, false, idleFrame(now, hero));
+        const float bounce = walking ? 2.f*std::sin(progress*3.14159f) : 0.f;
+        const bool drawn = character.draw(window,spriteOrigin-sf::Vector2f(0,bounce),PLAYER_SIZE,facing.x<0);
         if (!drawn) drawExplorer(window, playerPos, facing, walking ? progress : 0.f, hero, jumpPose);
         drawStrike(playerPos, now);
         window.setView(view);

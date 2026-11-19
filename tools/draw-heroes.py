@@ -10,17 +10,17 @@ OUT = Path("build/qq-preview/eyes")
 OUT.mkdir(parents=True, exist_ok=True)
 S = 3
 W, H = 240, 264
-names = ("枝白", "焰尾", "晚铃", "霜绒", "柚星", "重音テト", "凛凛蝶", "天马")
+names = ("枝白", "焰尾", "晚铃", "霜绒", "柚星", "重音テト", "凜凜蝶", "鸬宫天马")
 slugs = ("twig", "ember", "bell", "fleece", "yuzu", "teto", "rin", "tenma")
 styles = (
-    ("#283332","#fff6e8","#dcd9c3","#fafbf0","#a4b784","#738d68","#71bab9","#b2eed0","#fff3e5"),
+    ("#283332","#fff6e8","#dcd9c3","#fafbf0","#fff9e8","#c5c5ab","#71bab9","#b2eed0","#fff3e5"),
     ("#311f28","#4a353d","#271f2a","#806362","#cb484e","#952c42","#dd625b","#ffc971","#ffeadc"),
     ("#322538","#f697ab","#c66383","#ffcad0","#3e4059","#2e2c45","#af72eb","#f499c9","#ffece3"),
     ("#25313b","#edf4f4","#a8bdc6","#ffffff","#455665","#283d4c","#72b7c2","#fa779b","#ffefe8"),
     ("#313329","#f8eca9","#dbb458","#fff6d6","#56736c","#344d4c","#76b99e","#fbd277","#fff1d3"),
     ("#321d2c","#dc4267","#861f48","#ff9ca3","#7a314e","#43283b","#be244e","#ff97ae","#fff0e9"),
-    ("#293048","#657a9b","#364460","#c6dbf5","#dedbed","#706180","#7969ba","#efb9de","#fff0eb"),
-    ("#382331","#944462","#532740","#ee9b9b","#5d384c","#492937","#8664b7","#f7cc8d","#ffead9"),
+    ("#272033","#44344f","#2d223a","#8b789b","#faf7fa","#444050","#9360a9","#d6cadb","#fff0eb"),
+    ("#302031","#902656","#511436","#cf678e","#302e40","#211e2e","#8664b7","#f7cc8d","#ffead9"),
 )
 
 class Paint:
@@ -100,7 +100,7 @@ EYES = (
     (14.5, 8.2, 6.2,  0.6, .75, "#427089", "#b6eaf5"),
     (14.0, 9.4, 6.8, -0.5, .59, "#4c8059", "#efe992"),
     (15.2, 8.8, 6.2, -2.8, .69, "#8e234b", "#fb819b"),
-    (15.6, 7.0, 5.6, -1.1, .83, "#405f9a", "#a3ddc2"),
+    (15.6, 7.0, 5.6, -1.1, .83, "#58306c", "#ca83db"),
     (15.5, 8.3, 6.4, -2.0, .70, "#6a427d", "#d7a5ed"),
 )
 
@@ -170,7 +170,7 @@ def draw_eyes(p,style,phase,moving,ink,skin):
             eye_draw.line((0,y,size[0],y),fill=blend((200,182,199),(255,248,244),
                                                      ramp(0,.64,y/size[1])))
         center=p.position(ex-direction*1.15+sin(tau*phase+style*.58)*.55,cy-1.15)
-        tint=("#778041","#efda8d") if style==7 and i==1 else (base,light)
+        tint=("#417524","#b7ed6c") if style==7 and i==1 else (base,light)
         iris=iris_tile(*tint)
         eye.alpha_composite(iris,(center[0]-x0-iris.width//2,center[1]-y0-iris.height//2))
         p.im.paste(eye,(x0,y0),mask)
@@ -227,12 +227,6 @@ def render(style, phase, moving=False):
             p.path(f"M {base} 79 Q {base+direction*31} 92 {base+direction*27} 143 Q {base+direction*17} 184 {end} {tip} Q {end-direction*21} {tip-4} {base-direction*5} 192 Q {base-direction*22} 156 {base-direction*12} 112 Z",shade,ink,2.6)
             p.path(f"M {base+direction*11} 97 Q {base+direction*23} 141 {base+direction*17} 166 Q {base+direction*15} 198 {end-direction*4} {tip-8} Q {base+direction*7} 201 {base+direction*5} 174 Z",hair)
             p.path(f"M {base+direction*15} 109 Q {base+direction*21} 134 {base+direction*15} 157 Q {base+direction*12} 181 {end-direction*8} {tip-12}",None,shine,.95)
-        if style==7:
-            drift=beat*9
-            for direction in (-1,1):
-                x=120+direction*31
-                p.path(f"M {x} 159 Q {x+direction*34} 142 {x+direction*70} {132+drift} Q {x+direction*61} {166+drift} {x+direction*35} 182 Q {x+direction*53} {175+drift} {x+direction*57} {178+drift} Q {x+direction*34} 211 {x} 195 Z","#d6b7b0",shade,1.7)
-                p.path(f"M {x+direction*5} 186 Q {x+direction*27} 169 {x+direction*56} {146+drift}",None,"#ffe7b8",1.7)
     # Body, stockings and shoes.
     for cx, lift in ((106, max(0,stride)*12),(135,max(0,-stride)*12)):
         yy=238-lift
@@ -252,6 +246,22 @@ def render(style, phase, moving=False):
     p.path("M 94 174 Q 115 185 147 170 L 146 184 Q 118 196 95 185 Z",dark,ink,1.8)
     p.path("M 114 174 L 127 173 L 128 183 L 114 185 Z",accent,ink,1.6)
     p.path("M 118 177 L 124 176 L 124 180 L 118 181 Z",dark)
+    if style == 7:
+        hem = 3 * stride
+        p.path(f"M 98 166 Q 120 174 145 165 L {170+hem} 235 Q 144 248 118 242 L {74+hem} 237 Z",coat,ink,3)
+        p.path("M 121 170 L 126 171 L 124 242 L 119 243 Z","#8f294e")
+        p.path("M 94 174 Q 120 182 148 171 L 150 181 Q 117 193 92 183 Z",dark,ink,1.7)
+        for x in (98,143):
+            p.oval((x-4,175,x+3,182),accent,ink,1)
+    elif style == 6:
+        p.path("M 98 177 L 144 177 L 154 206 Q 121 216 89 205 Z",dark,ink,2)
+        for x in (102,115,129,141):
+            p.path(f"M {x} 181 L {x-2} 203",None,"#706774",1)
+        p.path("M 95 143 Q 119 152 146 142 L 144 181 Q 121 185 98 180 Z",coat,ink,1.5)
+    elif style == 1:
+        p.path("M 98 142 L 141 140 L 145 182 L 98 183 Z","#eee8dd",ink,2)
+    elif style == 2:
+        p.path("M 113 146 L 128 146 L 125 169 L 118 175 L 114 167 Z",hair,ink,1.4)
     # Sleeve eases up and back while the other arm stays near the waist.
     hr=147+wave*(16 if style in (1,5) else 8)+stride*5
     height=(32 if style in (1,2,5) else 15)*wave
@@ -265,6 +275,12 @@ def render(style, phase, moving=False):
     p.path(f"M 82 {ly-4} Q 86 {ly} 83 {ly+2}",None,shade,1.15)
     p.path("M 98 135 L 105 127 L 134 129 L 146 140 L 132 155 L 120 147 L 107 157 L 95 143 Z",hair,ink,2)
     p.path("M 120 144 L 127 152 L 120 162 L 114 152 Z",accent,ink,1.8)
+    if style == 6:
+        p.path("M 101 139 L 116 134 L 122 147 L 112 157 Z",coat,ink,1.5)
+        p.path("M 122 147 L 129 134 L 141 139 L 135 155 Z",coat,ink,1.5)
+        p.path("M 118 150 L 126 150 L 130 169 L 122 166 L 117 172 Z","#e0dce4",ink,1)
+    if style == 7:
+        p.path("M 100 133 Q 123 142 143 131 L 141 148 Q 120 158 104 148 Z",dark,accent,2)
     # Face silhouette, separate back hair and head pieces.
     if style==0:
         p.path("M 69 99 Q 54 130 49 151 L 72 146 L 65 168 Q 97 163 113 140 L 147 147 L 172 161 L 163 145 L 183 144 Q 160 114 172 89 Z",shade,ink)
@@ -304,7 +320,7 @@ def render(style, phase, moving=False):
         "M 57 112 Q 49 81 66 59 Q 86 34 116 48 Q 146 36 170 62 Q 188 81 181 116 L 169 103 L 167 90 L 156 87 L 150 97 L 139 90 L 146 73 Q 131 92 119 102 L 119 85 Q 101 103 82 101 L 83 89 L 72 101 L 62 119 Z",
     )
     if style==6:
-        p.path("M 56 111 Q 55 79 67 63 Q 86 43 119 46 Q 157 43 176 72 Q 185 88 177 117 L 169 107 Q 169 130 157 150 L 154 127 L 152 92 Q 135 105 128 105 L 132 88 Q 121 102 106 105 L 108 88 Q 98 102 83 104 L 85 90 Q 76 111 77 146 L 67 137 Q 59 123 62 106 Z",hair,ink,2.7)
+        p.path("M 56 111 Q 52 77 72 58 Q 89 42 120 45 Q 158 43 176 71 Q 184 87 179 118 L 169 145 L 159 148 L 158 100 L 149 102 L 145 87 L 145 102 L 127 103 L 124 87 L 124 103 L 108 102 L 106 90 L 104 102 L 83 101 L 80 136 L 72 149 L 66 128 Z",hair,ink,2.7)
     elif style==7:
         p.path("M 55 109 Q 52 69 85 55 Q 100 41 121 48 Q 151 37 174 66 Q 188 86 179 119 L 168 135 L 169 113 L 155 99 L 155 87 Q 140 99 131 109 Q 126 108 122 119 L 115 110 L 108 91 Q 102 105 84 111 L 88 94 Q 76 111 68 134 L 58 120 Z",hair,ink,2.7)
     else:
@@ -331,11 +347,7 @@ def render(style, phase, moving=False):
     p.path("M 137 58 Q 151 58 159 65",None,mix(hair,shine,.88),.81)
     p.path("M 155 72 Q 168 85 170 97",None,mix(hair,shade,.61),.95)
     if style==0:
-        p.path(f"M 93 54 Q 103 {29-beat*2} 126 25 Q 122 49 103 56 Z",accent,ink,2.5)
-        p.path("M 98 51 Q 109 43 118 34",None,coat,1.4)
-        p.path("M 87 53 Q 93 38 81 32 Q 72 47 87 53 Z",coat,ink,1.7)
-        spirit(p,48,161+beat*7,accent,ink,style)
-        p.star(36,134+beat*4,4,accent)
+        p.path(f"M 84 33 Q 107 {8-beat*2} 147 19 L 154 25 L 145 23 Q 109 16 89 38 Z","#b7d987",ink,1.4)
     elif style==1:
         p.path(f"M 90 49 L 82 {29+beat*3} L 96 {34+beat*3} L 104 {20+beat*3} L 112 {33+beat*3} L 127 {24+beat*3} L 123 45 Z",accent,ink,2.5)
         p.path("M 96 42 Q 109 38 120 40",None,shine,1.7)
@@ -374,21 +386,11 @@ def render(style, phase, moving=False):
             x=120+direction*49
             p.path(f"M {x} 107 Q {x+direction*10} 139 {x+direction*2} 165 Q {x-direction*3} 182 {x+direction*9+side} 196 Q {x-direction*12} 187 {x-direction*9} 162 Q {x-direction*3} 131 {x-direction*5} 105 Z",hair,ink,1.4)
             p.path(f"M {x} 121 Q {x+direction*4} 145 {x-direction*1} 161 Q {x-direction*4} 177 {x+direction*4+side} 189",None,shine,1.15)
-        for angle in range(5):
-            x=167+cos(tau*angle/5)*7
-            y=70+sin(tau*angle/5)*7
-            p.oval((x-4,y-4,x+4,y+4),accent,shade,.85)
-        p.oval((164,67,170,73),"#fff4cc",shade,.7)
-        bx=184+sin(tau*phase)*20
-        by=131+cos(tau*phase)*13
-        flap=6+5*abs(sin(phase*tau*3))
-        for direction in (-1,1):
-            p.path(f"M {bx} {by} Q {bx+direction*flap} {by-16} {bx+direction*flap} {by-3} Q {bx+direction*flap} {by+6} {bx} {by+4} Z",accent,shade,1)
-        p.path(f"M {bx} {by-1} L {bx} {by+6}",None,shine,1.35)
-        p.star(bx+14,by+9,2.1,shine)
     else:
-        p.path("M 140 66 Q 158 55 173 61 L 171 67 Q 156 64 143 72 Z",accent,shade,1.15)
-        p.star(165,67,7,accent)
+        # Long, arched ahoge are visible even in the small walking sprite.
+        for direction, reach, height in ((-1,66,4),(1,68,7),(-1,88,14),(1,89,19)):
+            tip = 120 + direction*reach + beat*3
+            p.path(f"M 119 50 Q {120+direction*31} {height-8} {tip} {height+53} Q {120+direction*37} {height-17} 125 50 Z",hair,shade,1.2)
         for direction in (-1,1):
             x=120+direction*49
             p.path(f"M {x} 105 Q {x+direction*10} 139 {x+direction*5} 168 Q {x+direction*1} 196 {x+direction*17+side} 208 Q {x-direction*10} 199 {x-direction*8} 171 Q {x-direction*3} 143 {x-direction*5} 109 Z",hair,ink,1.8)
@@ -441,7 +443,7 @@ title=ImageFont.truetype(font,30)
 label=ImageFont.truetype(font,23)
 sub=ImageFont.truetype(font,14)
 draw.text((560,40),"花神遗迹 · 角色预览",font=title,fill="#f6db9e",anchor="mm")
-actions=("叶片轻摆","挥手与火星","摇尾与铃结","羊团轻跳","小使魔飞舞","眨眼与卷发摇动","蝶翼轻拍","羽披浮动")
+actions=("叶片轻摆","挥手与火星","摇尾与铃结","羊团轻跳","小使魔飞舞","眨眼与卷发摇动","长发轻摆","发梢随风")
 for i in range(len(names)):
     l=33+i%4*270
     y=i//4*322
