@@ -1,5 +1,21 @@
 # Windows
 
+## C++ 原生版
+
+源码构建需要 CMake 3.24+、Git 和 C++17 编译器。在仓库根目录配置并构建：
+
+```sh
+cmake -S . -B build-native -G Ninja -DCMAKE_CXX_COMPILER=g++
+cmake --build build-native --config Release
+cmake --install build-native --prefix platforms/Windows/Native
+```
+
+首次配置会获取 SFML 3.0.2。发行目录内含 `byow_native.exe`、SFML 与 MinGW DLL、字体和许可文件。双击运行时无需 Java、Python 或 IDE。
+
+首页可查看玩法帮助、选择角色或进入四季迷宫。每关在「出发」后开始倒计时，拾取时钟延长 30 秒。收集四朵花并抵达出口后，选关地图的花朵会恢复颜色，进度保存到当前 Windows 用户。游玩时按 Tab 切换全图与跟随镜头，按 M 切换声音。
+
+## Java 兼容版
+
 如果本机目录中已有 Windows 免安装包，可双击 `BYOW.exe` 运行；包内含 Java runtime 和 Windows C++ 引擎，无须另装 Java 或 Python。发行包不纳入 Git，因此新克隆的仓库默认没有该 exe。
 
 从源码启动时，双击 `启动游戏.bat`。首次运行需要 Python 3.10+、JDK 17+ 和 C++17 编译器；若目录中存在 `BYOW.exe`，启动脚本优先运行免安装版，否则会调用仓库根目录的源码启动器。
