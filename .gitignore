@@ -4,6 +4,10 @@ saves/*.txt
 __pycache__/
 tests/__pycache__/
 .DS_Store
+.tools/
+/dist/
+/build-native/
+platforms/Windows/Native/
 platforms/Windows/BYOW.exe
 platforms/Windows/app/
 platforms/Windows/runtime/

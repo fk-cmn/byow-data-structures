@@ -1,8 +1,18 @@
 # BYOW 数据结构大作业
 
-基于 CS61B Project 3「Build Your Own World」的项目思路，使用官方原版 TileEngine 界面。核心数据结构和游戏逻辑由 C++17 实现；Java 仅负责接入官方的窗口、砖块显示、键鼠输入和本地存档。程序完全离线运行，不调用网络算法接口。
+基于 CS61B Project 3「Build Your Own World」的项目思路。核心数据结构、游戏逻辑和图形均提供 C++17 实现；原 Java TileEngine 版本继续保留作为兼容回退。程序完全离线运行，不调用网络算法接口。
+
+当前原生版的完整玩法、八关参数、界面、角色、配乐与开发状态见[《花神遗迹》玩家手册与开发交接](游戏交接说明.md)。
 
 ## 运行
+
+**C++ 原生原型（Windows 优先）**。Windows 用户可在 `platforms/Windows/Native/` 双击 `byow_native.exe`，无需安装 JDK、Python 或 IDE。首页按 `C` 可挑选八位探险者；选中角色后会显示全身动画和简介，点击右上角的 × 或按 Esc 返回首页，保留已选角色。源码构建需要 CMake 3.24+、Git 和 C++17 编译器，首次配置会获取固定版本 SFML 3.0.2。
+
+首页可直接开始第一关、进入选关地图或使用自定义种子。每关出发前会显示时间、步数和地形消耗上限。八关时限从 8 分钟逐步降到 4 分钟，拾取时钟可增加 30 秒。集齐四朵花后抵达出口即可通关。每个预设关卡首次通关会复苏一朵遗迹之花，八关共八朵。
+
+按住方向键或 WASD 可连续走动。地面、沙地和木桥分别消耗 1、5、3。用 Shift 加方向跨过一格碎石，消耗 3 并记作一步。池水只能走桥通过。点击地图选目标，按 `1/2/3` 切换 BFS、Dijkstra、A*，按 `E` 沿路线行走或停止。守卫预警时应离开红圈，空格攻击相邻守卫，药剂恢复 45 点生命。完整规则可在首页按 F1 查看，按 C 可切换角色。
+
+**Java 兼容版**：
 
 **macOS（Apple Silicon）**：双击 `platforms/macOS/BYOW.app`。应用内含精简 Java 运行时，无须另装 Java/Python。需在 Mac 上运行 `python3 package_macos.py` 生成应用包。
 
@@ -16,7 +26,7 @@ python3 run.py
 
 macOS 也可双击 `platforms/macOS/启动游戏.command`；Windows 双击 `platforms/Windows/启动游戏.bat`。从源码启动首次运行会编译。Windows 免安装发行包（`BYOW.exe`、应用文件和 runtime）以及 macOS `.app` 都是平台专属构建产物，不纳入 Git；推送仓库时包含共用源码、平台启动脚本和打包说明，用户可在对应平台重新构建应用包。
 
-## 玩法
+## Java 兼容版玩法
 
 收集地图中的 **4 朵花**（官方 `FLOWER` 砖块），然后到达橙色出口。粉色 `#` 是墙，绿色点是地板，黄色 `SAND` 为高代价地形，红色 `g` 是守卫，红色 `+` 是一次性生命恢复点。
 
@@ -77,7 +87,7 @@ python3 tests/verify.py
 ## 目录
 
 ```text
-src/                   C++ 数据结构、图算法、世界和游戏状态
+src/                   C++ 数据结构、图算法、游戏状态和原生界面
 java/core/             原版窗口的输入/显示适配、JSON 读取、存档
 java/vendor/           官方 TileEngine、RandomUtils 和 StdDraw 原始源码
 platforms/macOS/       macOS 启动入口与打包说明；BYOW.app 为本机生成

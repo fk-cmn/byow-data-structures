@@ -33,7 +33,12 @@ struct SearchResult {
     int cost = 0;
     double micros = 0;
 };
-struct Enemy { int at, home, target, health = 2; };
+struct Enemy {
+    int at, home, target, health = 2;
+    int tier = 0, damage = 8, warningCell = -1;
+};
+
+enum Terrain { Rock, Floor, Sand, Bridge, Water, Rubble };
 
 class World {
 public:
@@ -44,8 +49,29 @@ public:
     std::vector<Edge> edges;
     int start = 0, exit = 0, floorCount = 0, treeWeight = 0;
     explicit World(uint32_t s) : seed(s) { generate(); }
-    bool walkable(int id) const { return id >= 0 && id < CELLS && tile[id] != 0; }
-    int cost(int id) const { return tile[id] == 2 ? 5 : 1; }
+    bool walkable(int id) const { return id >= 0 && id < CELLS && tile[id] >= Floor && tile[id] <= Bridge; }
+    int cost(int id) const { return tile[id] == Sand ? 5 : tile[id] == Bridge ? 3 : 1; }
+    void addExpeditionTerrain(int level) {
+        for (const auto index : {4, 7, 10}) {
+            if (index > 4 && level < (index == 7 ? 3 : 6)) break;
+            const auto& room = rooms[index];
+            const auto center = point(room.center());
+            for (int dy : {-1, 0, 1}) for (int x = room.x + 1; x < room.x + room.w - 1; ++x) {
+                auto& cell = tile[Point{x, center.y + dy}.id()];
+                if (cell == Sand) cell = (dy == 0 || x == center.x) ? Bridge : Water;
+            }
+        }
+        const auto& room = rooms[2];
+        tile[Point{room.x + 1, room.y + 1}.id()] = Rubble;
+        for (int id = 0; id < CELLS; ++id) {
+            auto& neighbors = adjacency[id];
+            if (!walkable(id)) neighbors.clear();
+            else neighbors.erase(std::remove_if(neighbors.begin(), neighbors.end(),
+                [&](int cell) { return !walkable(cell); }), neighbors.end());
+        }
+        floorCount = static_cast<int>(std::count_if(tile.begin(), tile.end(),
+            [](int cell) { return cell >= Floor && cell <= Bridge; }));
+    }
     void generate() {
         Random rng(seed);
         // 分区内随机摆放房间，保留岩壁边界；每个种子均有 12 个房间。
@@ -60,7 +86,8 @@ public:
             candidates.push_back({a,b,manhattan(rooms[a].center(),rooms[b].center()),false});
         std::sort(candidates.begin(),candidates.end(),[](const Edge&a,const Edge&b){
             if(a.weight!=b.weight)return a.weight<b.weight;
-            if(a.a!=b.a)return a.a<b.a;return a.b<b.b;
+            if(a.a!=b.a)return a.a<b.a;
+            return a.b<b.b;
         });
         DisjointSet sets(int(rooms.size()));
         std::vector<Edge> remaining;
@@ -151,7 +178,9 @@ public:
 class Game {
 public:
     World world;
-    int player,health=100,turn=0,spent=0,collected=0,kills=0;
+    int player,health=100,turn=0,spent=0,collected=0,kills=0,steps=0;
+    int stepLimit = INF, costLimit = INF, expeditionLevel = -1;
+    const char* limitFailure = nullptr;
     std::array<bool,CELLS> visible{},explored{};
     std::vector<int> crystals,potions;
     std::vector<Enemy> enemies;
@@ -194,16 +223,26 @@ public:
         int target = enemy.at == enemy.target ? enemy.home : enemy.target;
         return world.search(enemy.at, target, "BFS");
     }
-    void act(char command){
+    void act(char command, bool jump = false){
         if(status!="playing")return;
         int destination=player;Point p=point(player);
         if(command=='W')--p.y;else if(command=='S')++p.y;
         else if(command=='A')--p.x;else if(command=='D')++p.x;
         else if(command!='F'&&command!='.')return;
         if(command!='F'&&command!='.'){
+            if (jump) {
+                if (p.x < 0 || p.x >= WIDTH || p.y < 0 || p.y >= HEIGHT || world.tile[p.id()] != Rubble) return;
+                const auto origin = point(player);
+                p = {p.x * 2 - origin.x, p.y * 2 - origin.y};
+            }
             if(p.x<0||p.x>=WIDTH||p.y<0||p.y>=HEIGHT||!world.walkable(p.id())){message="前方是岩壁。";return;}
             destination=p.id();
             if(occupied(destination)){message="守卫挡住了去路，按空格攻击。";return;}
+        }
+        if (destination != player && (steps >= stepLimit || spent + movementCost(destination, jump) > costLimit)) {
+            limitFailure = steps >= stepLimit ? u8"超过步数上限" : u8"超过地形消耗上限";
+            status = "lost";
+            return;
         }
         ++turn;message="探索遗迹中……";
         if(command=='F'){
@@ -212,15 +251,16 @@ public:
                 hit=true;if(--e.health==0){++kills;message="守卫已被击败。";}else message="击中守卫！再攻击一次。";
             }
             if(!hit)message="挥动光刃。相邻的守卫会受到伤害。";
-        }else if(destination!=player){player=destination;spent+=world.cost(player);}
+        }else if(destination!=player){player=destination;++steps;spent+=movementCost(player, jump);}
         auto crystal=std::find(crystals.begin(),crystals.end(),player);
         if(crystal!=crystals.end()){crystals.erase(crystal);++collected;message="获得一朵花！";}
         auto potion=std::find(potions.begin(),potions.end(),player);
-        if(potion!=potions.end()&&health<100){potions.erase(potion);health=std::min(100,health+30);message="修复生命 +30。";}
+        if(potion!=potions.end()&&health<100){potions.erase(potion);health=std::min(100,health+(expeditionLevel >= 0 ? 45 : 30));message="修复生命 +30。";}
         if(player==world.exit&&collected==4){status="won";message="出口已开启，探索完成！";updateSight();return;}
         if(player==world.exit)message="出口尚未开启，需要收集全部 4 朵花。";
         // 守卫每三回合行动一次。近处用 BFS 追踪，否则在家与巡逻点间往返。
-        if(turn%3==0)for(int i=0;i<int(enemies.size());++i){
+        if (expeditionLevel >= 0) actExpeditionGuards();
+        else if(turn%3==0)for(int i=0;i<int(enemies.size());++i){
             auto& e=enemies[i];if(e.health<=0)continue;
             if(e.at==e.target)std::swap(e.home,e.target);
             auto route=enemyPlan(e);
@@ -230,40 +270,31 @@ public:
         if(health==0){status="lost";message="探索中断。可以撤销行动，或开启新的旅程。";}
         updateSight();
     }
+    int movementCost(int destination, bool jump) const {
+        return jump ? 3 : world.cost(destination);
+    }
+
+    void actExpeditionGuards() {
+        for (int i = 0; i < static_cast<int>(enemies.size()); ++i) {
+            auto& guard = enemies[i];
+            if (guard.health <= 0) continue;
+            if (guard.warningCell >= 0) {
+                if (player == guard.warningCell) health = std::max(0, health - guard.damage);
+                guard.warningCell = -1;
+                continue;
+            }
+            if (turn % (expeditionLevel < 4 ? 4 : 3) != 0) continue;
+            if (manhattan(guard.at, player) == 1) {
+                guard.warningCell = player;
+                continue;
+            }
+            if (guard.at == guard.target) std::swap(guard.home, guard.target);
+            const auto route = enemyPlan(guard);
+            if (route.path.size() > 1 && !occupied(route.path[1], i) && route.path[1] != player)
+                guard.at = route.path[1];
+        }
+    }
     void replay(const std::string& history){for(char c:history)act(c);}
 };
 
-inline void jsonString(std::ostream& out,const std::string& s){
-    out<<'"';for(unsigned char c:s){if(c=='"'||c=='\\')out<<'\\'<<c;else if(c<32)out<<' ';else out<<c;}out<<'"';
-}
-template<class T> void jsonArray(std::ostream& out,const T& values){
-    out<<'[';bool first=true;for(auto value:values){if(!first)out<<',';first=false;out<<int(value);}out<<']';
-}
-inline void jsonSearch(std::ostream& out,const SearchResult& r){
-    out<<"{\"algorithm\":\""<<r.algorithm<<"\",\"path\":";jsonArray(out,r.path);
-    out<<",\"order\":";jsonArray(out,r.order);
-    out<<",\"cost\":"<<r.cost<<",\"expanded\":"<<r.order.size()<<",\"micros\":"<<r.micros<<'}';
-}
-inline void jsonGame(std::ostream& out,const Game& game,int goal=-1){
-    const auto&w=game.world;
-    out<<"{\"version\":1,\"seed\":"<<w.seed<<",\"width\":"<<WIDTH<<",\"height\":"<<HEIGHT
-       <<",\"player\":"<<game.player<<",\"exit\":"<<w.exit<<",\"health\":"<<game.health
-       <<",\"turn\":"<<game.turn<<",\"spent\":"<<game.spent<<",\"collected\":"<<game.collected
-       <<",\"kills\":"<<game.kills<<",\"status\":\""<<game.status<<"\",\"message\":";
-    jsonString(out,game.message);out<<",\"tiles\":";jsonArray(out,w.tile);
-    out<<",\"visible\":";jsonArray(out,game.visible);out<<",\"explored\":";jsonArray(out,game.explored);
-    out<<",\"crystals\":";jsonArray(out,game.crystals);out<<",\"potions\":";jsonArray(out,game.potions);
-    out<<",\"floorCount\":"<<w.floorCount<<",\"treeWeight\":"<<w.treeWeight<<",\"rooms\":[";
-    bool first=true;for(auto r:w.rooms){if(!first)out<<',';first=false;out<<"{\"x\":"<<r.x<<",\"y\":"<<r.y<<",\"w\":"<<r.w<<",\"h\":"<<r.h<<",\"center\":"<<r.center()<<'}';}
-    out<<"],\"edges\":[";first=true;
-    for(auto e:w.edges){if(!first)out<<',';first=false;out<<"{\"a\":"<<e.a<<",\"b\":"<<e.b<<",\"weight\":"<<e.weight<<",\"tree\":"<<(e.tree?"true":"false")<<'}';}
-    out<<"],\"enemies\":[";first=true;
-    for(auto e:game.enemies){if(e.health<=0)continue;if(!first)out<<',';first=false;
-        out<<"{\"at\":"<<e.at<<",\"health\":"<<e.health<<",\"path\":";
-        jsonArray(out,game.enemyPlan(e).path);out<<'}';}
-    out<<"],\"goal\":"<<goal<<",\"searches\":[";
-    if(w.walkable(goal)){first=true;for(const auto* algo:{"BFS","DIJKSTRA","ASTAR"}){
-        if(!first)out<<',';first=false;jsonSearch(out,w.search(game.player,goal,algo));}}
-    out<<"]}";
-}
 }
